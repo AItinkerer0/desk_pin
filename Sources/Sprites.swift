@@ -86,7 +86,7 @@ enum Sprites {
     private enum EyeStyle { case open, closed }
 
     static func scene(kind: WidgetKind, phase: LifePhase, beat: Int, charX: CGFloat,
-                      ballX: CGFloat = 0, ballLift: CGFloat = 0, kicking: Bool = false) -> SpriteFrame {
+                      ballX: CGFloat = 0, ballLift: CGFloat = 0, facingRight: Bool = true) -> SpriteFrame {
         var c = room(working: phase == .work && (beat % 14) < 10)
         var z: CGFloat? = nil
         var zX: CGFloat = 0, zY: CGFloat = 0
@@ -95,11 +95,13 @@ enum Sprites {
         case .idle:
             c += front(kind, beat: beat, x: charX)
         case .play:
-            c += side(kind, beat: beat, x: charX, flip: false,
-                      legs: kicking ? .kicking : .walking, arms: .rest, eyes: .open)
-            // 공 — 흰 몸체 + 어두운 패치, 날 때는 ballLift만큼 떠오름
-            c.append(Cell(ballX, 7.3 - ballLift, 0.7, 0.7, NSColor(hex: 0xE8E6E0)))
-            c.append(Cell(ballX + 0.18, 7.48 - ballLift, 0.3, 0.3, NSColor(hex: 0x3A3F4A)))
+            // 공식 저글링 모션 재현 (영상 분석 2026-06-13, assets/ref/motion/clawd-juggle_*.png):
+            // 코끝에서 공 통통 + 3번마다 몸 돌려 반대쪽에서 계속. 다리는 walking = 들썩이는 묘기 느낌
+            c += side(kind, beat: beat, x: charX, flip: !facingRight, legs: .walking, arms: .rest, eyes: .open)
+            // 체크무늬 축구공
+            c.append(Cell(ballX, 7.3 - ballLift, 0.7, 0.7, NSColor(hex: 0xF0EEE8)))
+            c.append(Cell(ballX + 0.08, 7.42 - ballLift, 0.24, 0.24, NSColor(hex: 0x26282E)))
+            c.append(Cell(ballX + 0.40, 7.66 - ballLift, 0.24, 0.24, NSColor(hex: 0x26282E)))
         case .walkToDesk, .walkBack:
             c += side(kind, beat: beat, x: charX, flip: false, legs: .walking, arms: .rest, eyes: .open)
         case .walkToBed, .returnHome:

@@ -14,16 +14,15 @@ final class WidgetView: NSView {
 
     // 생활 사이클 상태 — 위젯마다 독립 (랜덤 길이로 자연 비동기)
     private var beat = Int.random(in: 0...30)
-    private var phase: LifePhase = .idle
+    private var phase: LifePhase = .play          // 하루는 공놀이로 시작 (대기 단계 제거, 2026-06-13)
     private var phaseBeat = 0
-    private var phaseDur = 40 + Int.random(in: 0...50)
-    private var charX: CGFloat = Sprites.idleX
+    private var phaseDur = Int.max
+    private var charX: CGFloat = Sprites.playX
 
-    // 공차기 상태 (.play 전용)
-    private var ballX: CGFloat = 0
-    private var ballAir = 0          // 공중에 떠 있는 남은 박자
-    private var kickedNow = false    // 이번 박자에 킥 포즈
-    private var kickCount = 0
+    // 공놀이(저글링) 상태 (.play 전용)
+    private var ballX: CGFloat = Sprites.playX + 5.0
+    private var ballLift: CGFloat = 2.4   // 지면 기준 공 높이 (셀)
+    private var facingRight = true
 
     // 입력 상태
     private enum GrabKind { case corner, edgeH, edgeV }
@@ -90,24 +89,23 @@ final class WidgetView: NSView {
         case .idle:
             if phaseBeat >= phaseDur { enter(.walkToDesk) }   // 하루 루틴 고정 (2026-06-13)
         case .play:
-            kickedNow = false
-            if ballAir > 0 {
-                // 공 비행 — 포물선 통통
-                ballX += 0.8
-                ballAir -= 1
-            } else if ballX > charX + 5.9 {
-                charX += Sprites.walkSpeed    // 공 쫓아가기
+            // 저글링: 코끝에서 2박자에 한 번 통통, 3번 튀기면 몸 돌려 반대쪽 (영상 모션)
+            let juggleEnd = 16
+            if phaseBeat <= juggleEnd {
+                let bounce = phaseBeat / 2
+                facingRight = (bounce / 3) % 2 == 0
+                ballX = facingRight ? charX + 5.0 : charX - 0.7
+                ballLift = (phaseBeat % 2 == 1) ? 3.5 : 2.4
             } else {
-                kickedNow = true               // 뻥!
-                ballAir = 3
-                kickCount += 1
-            }
-            if ballX > 16.5 || kickCount >= 3 {
-                enter(.returnHome)             // 공은 책상 밑으로 — 들어가서 쉬자
+                // 공이 떨어져 책상 쪽으로 데굴데굴 — 놀이 끝, 출근
+                facingRight = true
+                ballLift = max(0, ballLift - 1.2)
+                ballX += 0.7
+                if phaseBeat >= juggleEnd + 5 { enter(.walkToDesk) }
             }
         case .returnHome:
             charX = max(Sprites.idleX, charX - Sprites.walkSpeed)
-            if charX <= Sprites.idleX { enter(.idle) }
+            if charX <= Sprites.idleX { enter(.walkToDesk) }   // (현재 미사용 경로)
         case .walkToDesk:
             charX = min(Sprites.deskX, charX + Sprites.walkSpeed)
             if charX >= Sprites.deskX { enter(.work) }
@@ -136,10 +134,10 @@ final class WidgetView: NSView {
         case .doze: phaseDur = 10 + Int.random(in: 0...8)
         case .sleep: phaseDur = 30 + Int.random(in: 0...30)   // ≈7~14초
         case .play:
-            phaseDur = .max                                   // 공이 굴러가면 종료
-            ballX = charX + 6.3                               // 한 걸음 다가가서 첫 킥이 나오는 거리
-            ballAir = 0
-            kickCount = 0
+            phaseDur = .max                                   // 저글링 단계가 자체 종료
+            ballX = charX + 5.0                               // 코끝 위치
+            ballLift = 2.4
+            facingRight = true
         default: phaseDur = .max                              // 걷기는 위치 도달로 종료
         }
     }
@@ -152,9 +150,8 @@ final class WidgetView: NSView {
 
         // W3 alpha 백킹은 창 배경(applyWindowTraits)에서 처리 — 뷰 fill은 회색 박스로 비침(실측)
 
-        let lift: CGFloat = ballAir > 0 ? [0, 0.6, 1.3, 1.0][min(3, ballAir)] : 0
         let f = Sprites.scene(kind: kind, phase: phase, beat: beat, charX: charX,
-                              ballX: ballX, ballLift: lift, kicking: kickedNow)
+                              ballX: ballX, ballLift: ballLift, facingRight: facingRight)
         let cell = min(bounds.width / Sprites.sceneW, bounds.height / Sprites.sceneH)
         let ox = (bounds.width - Sprites.sceneW * cell) / 2
         let oy = (bounds.height - Sprites.sceneH * cell) / 2
