@@ -99,7 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         let menu = NSMenu()
         menu.delegate = self
         for wc in ConfigStore.shared.config.widgets {
-            let title = wc.id == "claude" ? "Claude 위젯" : (wc.id == "codex" ? "Codex 위젯" : wc.id)
+            let title = wc.id == "claude" ? "Clawd (Claude)" : (wc.id == "codex" ? "Cody (Codex)" : wc.id)
             let item = NSMenuItem(title: title, action: #selector(toggleWidget(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = wc.id

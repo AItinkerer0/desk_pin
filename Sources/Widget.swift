@@ -56,7 +56,7 @@ final class WidgetView: NSView {
         m.addItem(.separator())
         if let delegate = NSApp.delegate as? AppDelegate {
             for wc in ConfigStore.shared.config.widgets {
-                let title = wc.id == "claude" ? "Claude 위젯" : (wc.id == "codex" ? "Codex 위젯" : wc.id)
+                let title = wc.id == "claude" ? "Clawd (Claude)" : (wc.id == "codex" ? "Cody (Codex)" : wc.id)
                 let item = NSMenuItem(title: title, action: #selector(AppDelegate.toggleWidget(_:)), keyEquivalent: "")
                 item.target = delegate
                 item.representedObject = wc.id
