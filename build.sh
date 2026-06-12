@@ -12,6 +12,8 @@ rm -rf /Applications/DeskPin.app
 mkdir -p /Applications/DeskPin.app/Contents/MacOS
 cp /tmp/DeskPin_build /Applications/DeskPin.app/Contents/MacOS/DeskPin
 cp resources/Info.plist /Applications/DeskPin.app/Contents/Info.plist
+mkdir -p /Applications/DeskPin.app/Contents/Resources
+cp assets/sprites/*/*.png /Applications/DeskPin.app/Contents/Resources/ 2>/dev/null || true
 rm -f /tmp/DeskPin_build
 
 codesign --force --sign - /Applications/DeskPin.app

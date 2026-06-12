@@ -11,6 +11,7 @@ struct WidgetConfig: Codable {
     var y: Double
     var size: Double
     var visible: Bool
+    var motion: String?   // 루프 위젯의 모션 이름 (nil이면 kind 기본값) — 우클릭 메뉴로 변경
 }
 
 struct AppConfig: Codable {
@@ -48,6 +49,20 @@ final class ConfigStore {
             }
             config = ConfigStore.defaultConfig()
             scheduleSave()   // 리뷰 반영: 첫 실행에도 디스크와 메모리 상태 일치
+        }
+        // 마이그레이션: 돋보기 탐정 위젯 (2026-06-13)
+        if !config.widgets.contains(where: { $0.id == "detective" }) {
+            config.widgets.append(WidgetConfig(
+                id: "detective", kind: .detectiveLoop,
+                appPath: "/Applications/Claude.app",
+                bundleId: "com.anthropic.claudefordesktop",
+                x: 1030, y: 180, size: 150, visible: true))
+            scheduleSave()
+        }
+        // 최종 구성(Boss 2026-06-13): 집 2채 + 탐정만 — 저글링 재건축 위젯은 제거
+        if config.widgets.contains(where: { $0.id == "juggle" }) {
+            config.widgets.removeAll { $0.id == "juggle" }
+            scheduleSave()
         }
     }
 

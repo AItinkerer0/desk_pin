@@ -5,7 +5,11 @@ import AppKit
 //   왼쪽 침대(0~4.8) · 가운데 마당 · 오른쪽 노트북 책상(13.6~18)
 // 캐릭터 스프라이트는 charX(셀)만큼 평행이동, 걷기는 charX가 박자마다 전진.
 
-enum WidgetKind: String, Codable { case clawd, codex }
+enum WidgetKind: String, Codable {
+    case clawd, codex
+    case clawdLoop = "clawd_loop"             // 영상 추출 저글링 무한 루프 (생활 사이클 없음)
+    case detectiveLoop = "clawd_detective"    // 공식 돋보기 탐정 모션 무한 루프 (clawd-magnifier.gif, 113프레임)
+}
 
 enum LifePhase {
     case idle          // 마당에서 정면 대기 (팔 들썩+깜빡)
@@ -63,9 +67,9 @@ enum Sprites {
     static let sceneW: CGFloat = 20       // 방 폭 — 넓혀서 여백·동선 확보 (2026-06-13 2차 튜닝)
     static let sceneH: CGFloat = 8.65     // 벽(0~8) + 바닥(8~8.5) + 여유 (지붕 제거 후 축소)
     static let offsetY: CGFloat = 0.15    // 캐릭터 축소 후 음수 y 셀이 없어 최소 여백만
-    // 비율 튜닝(2026-06-13 2차, Boss: "캐릭터 지금도 커") — 0.66 → 0.55
-    static let charScale: CGFloat = 0.55
-    static let charYOff: CGFloat = 8 * (1 - 0.55)   // 발바닥을 바닥(y=8)에 고정
+    // 비율 튜닝(2026-06-13 3차, Boss: "캐릭터 크기 조금 줄이고") — 0.55 → 0.48
+    static let charScale: CGFloat = 0.48
+    static let charYOff: CGFloat = 8 * (1 - 0.48)   // 발바닥을 바닥(y=8)에 고정
     static let idleX: CGFloat = 7.8
     static let deskX: CGFloat = 11.3
     static let bedX: CGFloat = 1.2
@@ -86,7 +90,9 @@ enum Sprites {
     private enum EyeStyle { case open, closed }
 
     static func scene(kind: WidgetKind, phase: LifePhase, beat: Int, charX: CGFloat,
-                      ballX: CGFloat = 0, ballLift: CGFloat = 0, facingRight: Bool = true) -> SpriteFrame {
+                      ballX: CGFloat = 0, ballLift: CGFloat = 0,
+                      ballRight: Bool = true, playPose: Int = 1) -> SpriteFrame {
+        // playPose: 0 = 기울여 코로 튕김(무릎 굽힘), 1 = 직립 ¾(주둥이 공쪽·반대팔 번쩍), 2 = 정면 양팔(공 정수리 위)
         var c = room(working: phase == .work && (beat % 14) < 10)
         var z: CGFloat? = nil
         var zX: CGFloat = 0, zY: CGFloat = 0
@@ -94,14 +100,21 @@ enum Sprites {
         switch phase {
         case .idle:
             c += front(kind, beat: beat, x: charX)
+        case .play where playPose < 0:
+            break   // 비트맵 스프라이트 모드 — 방만 그리고 캐릭터+공은 WidgetView가 영상 추출 프레임으로 렌더
         case .play:
-            // 공식 저글링 모션 재현 (영상 분석 2026-06-13, assets/ref/motion/clawd-juggle_*.png):
-            // 코끝에서 공 통통 + 3번마다 몸 돌려 반대쪽에서 계속. 다리는 walking = 들썩이는 묘기 느낌
-            c += side(kind, beat: beat, x: charX, flip: !facingRight, legs: .walking, arms: .rest, eyes: .open)
-            // 체크무늬 축구공
-            c.append(Cell(ballX, 7.3 - ballLift, 0.7, 0.7, NSColor(hex: 0xF0EEE8)))
-            c.append(Cell(ballX + 0.08, 7.42 - ballLift, 0.24, 0.24, NSColor(hex: 0x26282E)))
-            c.append(Cell(ballX + 0.40, 7.66 - ballLift, 0.24, 0.24, NSColor(hex: 0x26282E)))
+            // 셀 기반 폴백 (스프라이트 PNG 없을 때) — 0.1초 전수 판독 키프레임
+            switch playPose {
+            case 0:  c += juggleTilt(kind, x: charX, ballRight: ballRight)
+            case 2:  c += jugglePeak(kind, x: charX)
+            default: c += juggleSide(kind, x: charX, ballRight: ballRight)
+            }
+            // 체크무늬 축구공 (몸 폭의 ~1/5, 체커 패치 4개 — 영상 질감)
+            c.append(Cell(ballX, 7.0 - ballLift, 1.0, 1.0, NSColor(hex: 0xF0EEE8)))
+            c.append(Cell(ballX + 0.10, 7.08 - ballLift, 0.28, 0.28, NSColor(hex: 0x26282E)))
+            c.append(Cell(ballX + 0.58, 7.30 - ballLift, 0.28, 0.28, NSColor(hex: 0x26282E)))
+            c.append(Cell(ballX + 0.16, 7.56 - ballLift, 0.28, 0.28, NSColor(hex: 0x26282E)))
+            c.append(Cell(ballX + 0.62, 7.74 - ballLift, 0.26, 0.24, NSColor(hex: 0x26282E)))
         case .walkToDesk, .walkBack:
             c += side(kind, beat: beat, x: charX, flip: false, legs: .walking, arms: .rest, eyes: .open)
         case .walkToBed, .returnHome:
@@ -209,6 +222,70 @@ enum Sprites {
             c.append(Cell(3, er, 1, 1, Palette.eye))
             c.append(Cell(8, er, 1, 1, Palette.eye))
         }
+        return place(c, at: x, flip: false, width: 12)
+    }
+
+    // MARK: - 저글링 포즈 3종 (0.1초 전수 판독 기반) — 로컬은 "공이 오른쪽" 기준, 왼쪽이면 flip
+
+    // 직립 ¾: 주둥이 공쪽, 반대팔 번쩍, 눈 둘 다(공 쪽으로 쏠림), 다리 4개 곧게
+    private static func juggleSide(_ kind: WidgetKind, x: CGFloat, ballRight: Bool) -> [Cell] {
+        let B = kind == .clawd ? Palette.clawdBody : Palette.codexBody
+        let t: CGFloat = kind == .codex ? 1 : 0
+        var c: [Cell] = []
+        if kind == .codex {
+            c.append(Cell(3, 0, 2, 1, B))
+            c.append(Cell(7, 0, 2, 1, B))
+        }
+        c.append(Cell(2, t, 8, 6 - t, B))
+        c.append(Cell(10, 2.3 + t, 1.8, 1.6, B))      // 주둥이 (공 쪽)
+        c.append(Cell(0.3, 1.0 + t, 1.8, 1.3, B))     // 반대팔 번쩍
+        c.append(Cell(4.6, 1 + t, 1, 1, Palette.eye)) // 눈 — 공 쪽으로 쏠림
+        c.append(Cell(7.6, 1 + t, 1, 1, Palette.eye))
+        for lx: CGFloat in [2.4, 4.3, 6.3, 8.3] { c.append(Cell(lx, 6, 1, 2, B)) }
+        return place(c, at: x, flip: !ballRight, width: 12)
+    }
+
+    // 기울임 접촉 (레퍼런스 짤 2026-06-13): 머리가 바닥 근처까지 깊게, 몸은 4단 계단식(세분화),
+    // 꼬리 엉덩이 위로 삐죽, 공쪽 다리 접힘, 공은 코끝 밀착
+    private static func juggleTilt(_ kind: WidgetKind, x: CGFloat, ballRight: Bool) -> [Cell] {
+        let B = kind == .clawd ? Palette.clawdBody : Palette.codexBody
+        var c: [Cell] = []
+        // 계단식 몸통 4단 — 엉덩이(높음) → 머리(낮음)
+        c.append(Cell(2.0, -1.0, 2.4, 6.6, B))
+        c.append(Cell(4.2, 0.0, 2.2, 6.0, B))
+        c.append(Cell(6.2, 1.0, 2.2, 5.2, B))
+        c.append(Cell(8.2, 2.0, 2.6, 4.2, B))
+        if kind == .codex {                            // 구름 봉우리는 들린 엉덩이 쪽
+            c.append(Cell(2.4, -1.7, 1.8, 0.8, B))
+            c.append(Cell(5.0, -0.7, 1.8, 0.8, B))
+        }
+        c.append(Cell(0.9, -1.3, 1.6, 1.3, B))         // 꼬리/집게 — 엉덩이 위로 삐죽
+        c.append(Cell(10.6, 4.4, 1.6, 1.4, B))         // 주둥이 — 바닥 근처, 공에 밀착
+        c.append(Cell(5.0, 1.6, 1, 1, Palette.eye))    // 눈 — 기울기 따라 단차
+        c.append(Cell(8.8, 3.0, 1, 1, Palette.eye))
+        c.append(Cell(2.6, 5.6, 1, 2.4, B))            // 먼 다리 쭉 (높아진 엉덩이에서 바닥까지)
+        c.append(Cell(4.6, 6.0, 1, 2.0, B))
+        c.append(Cell(6.5, 6.2, 1, 1.6, B))
+        c.append(Cell(8.2, 6.2, 1, 1.0, B))            // 공쪽 다리 — 무릎 접힘
+        c.append(Cell(7.3, 7.0, 1.1, 0.7, B))          // 접힌 발
+        return place(c, at: x, flip: !ballRight, width: 12)
+    }
+
+    // 정면 피크: 양팔 벌리고 올려다봄 (눈 높이 올라감), 다리 4개 곧게
+    private static func jugglePeak(_ kind: WidgetKind, x: CGFloat) -> [Cell] {
+        let B = kind == .clawd ? Palette.clawdBody : Palette.codexBody
+        let t: CGFloat = kind == .codex ? 1 : 0
+        var c: [Cell] = []
+        if kind == .codex {
+            c.append(Cell(3, 0, 2, 1, B))
+            c.append(Cell(7, 0, 2, 1, B))
+        }
+        c.append(Cell(2, t, 8, 6 - t, B))
+        c.append(Cell(0, 1.6 + t, 2, 1.4, B))         // 양팔 활짝
+        c.append(Cell(10, 1.6 + t, 2, 1.4, B))
+        c.append(Cell(3, 0.6 + t, 1, 1, Palette.eye)) // 눈 위로 — 올려다봄
+        c.append(Cell(8, 0.6 + t, 1, 1, Palette.eye))
+        for lx: CGFloat in [2, 4, 7, 9] { c.append(Cell(lx, 6, 1, 2, B)) }
         return place(c, at: x, flip: false, width: 12)
     }
 

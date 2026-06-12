@@ -99,7 +99,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         let menu = NSMenu()
         menu.delegate = self
         for wc in ConfigStore.shared.config.widgets {
-            let title = wc.id == "claude" ? "Clawd (Claude)" : (wc.id == "codex" ? "Cody (Codex)" : wc.id)
+            let title = wc.id == "claude" ? "Clawd (Claude)"
+                : (wc.id == "codex" ? "Cody (Codex)"
+                : (wc.id == "juggle" ? "Clawd 저글링"
+                : (wc.id == "detective" ? "Clawd 탐정 (돋보기)" : wc.id)))
             let item = NSMenuItem(title: title, action: #selector(toggleWidget(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = wc.id
@@ -248,11 +251,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
     private func startTimer() {
         // 리뷰 반영: scheduledTimer는 .default 모드 전용 — 메뉴 트래킹 중 애니메이션이 얼지 않게 .common 등록
-        let t = Timer(timeInterval: 0.24, repeats: true) { [weak self] _ in
+        // 박자 0.1s — 공식 영상 프레임 간격과 1:1 (저글링 22프레임 = 2.2s 루프)
+        let t = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self, ConfigStore.shared.config.animationsEnabled else { return }
             for (id, v) in self.views where self.panels[id]?.isVisible == true { v.tick() }
         }
-        t.tolerance = 0.06   // 전력 가드 — 시스템이 박자를 묶어 깨울 수 있게
+        t.tolerance = 0.02   // 전력 가드 — 시스템이 박자를 묶어 깨울 수 있게
         RunLoop.main.add(t, forMode: .common)
         timer = t
     }

@@ -1,3 +1,5 @@
-# Anthropic 공식 에셋 추출물 — 저작권상 미커밋. 재생성: swiftc tools/extract_frames.swift 후 Claude.app 번들에서 추출
+# Anthropic 공식 에셋 추출물 — 저작권상 미커밋. 재생성: tools/extract_frames.swift, tools/make_sprites.swift
 assets/ref/
+assets/sprites/
 .DS_Store
+assets/external/
