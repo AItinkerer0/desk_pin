@@ -88,25 +88,26 @@ final class WidgetView: NSView {
         phaseBeat += 1
         switch phase {
         case .idle:
-            if phaseBeat >= phaseDur {
-                enter(Int.random(in: 0..<10) < 4 ? .play : .walkToDesk)   // 가끔은 일 대신 공놀이
-            }
+            if phaseBeat >= phaseDur { enter(.walkToDesk) }   // 하루 루틴 고정 (2026-06-13)
         case .play:
             kickedNow = false
             if ballAir > 0 {
                 // 공 비행 — 포물선 통통
-                ballX += 0.85
+                ballX += 0.8
                 ballAir -= 1
             } else if ballX > charX + 5.9 {
                 charX += Sprites.walkSpeed    // 공 쫓아가기
             } else {
                 kickedNow = true               // 뻥!
-                ballAir = 4
+                ballAir = 3
                 kickCount += 1
             }
-            if ballX > 13.8 || kickCount >= 3 {
-                enter(.walkToDesk)             // 공은 책상 밑으로 굴러감 — 일하러 가자
+            if ballX > 16.5 || kickCount >= 3 {
+                enter(.returnHome)             // 공은 책상 밑으로 — 들어가서 쉬자
             }
+        case .returnHome:
+            charX = max(Sprites.idleX, charX - Sprites.walkSpeed)
+            if charX <= Sprites.idleX { enter(.idle) }
         case .walkToDesk:
             charX = min(Sprites.deskX, charX + Sprites.walkSpeed)
             if charX >= Sprites.deskX { enter(.work) }
@@ -120,8 +121,8 @@ final class WidgetView: NSView {
         case .sleep:
             if phaseBeat >= phaseDur { enter(.walkBack) }
         case .walkBack:
-            charX = min(Sprites.idleX, charX + Sprites.walkSpeed)
-            if charX >= Sprites.idleX { enter(.idle) }
+            charX = min(Sprites.playX, charX + Sprites.walkSpeed)
+            if charX >= Sprites.playX { enter(.play) }       // 일어나면 공차러
         }
         needsDisplay = true
     }
@@ -136,7 +137,7 @@ final class WidgetView: NSView {
         case .sleep: phaseDur = 30 + Int.random(in: 0...30)   // ≈7~14초
         case .play:
             phaseDur = .max                                   // 공이 굴러가면 종료
-            ballX = charX + 7
+            ballX = charX + 6.3                               // 한 걸음 다가가서 첫 킥이 나오는 거리
             ballAir = 0
             kickCount = 0
         default: phaseDur = .max                              // 걷기는 위치 도달로 종료
@@ -151,7 +152,7 @@ final class WidgetView: NSView {
 
         // W3 alpha 백킹은 창 배경(applyWindowTraits)에서 처리 — 뷰 fill은 회색 박스로 비침(실측)
 
-        let lift: CGFloat = ballAir > 0 ? [0, 0.5, 1.1, 1.45, 1.2][min(4, ballAir)] : 0
+        let lift: CGFloat = ballAir > 0 ? [0, 0.6, 1.3, 1.0][min(3, ballAir)] : 0
         let f = Sprites.scene(kind: kind, phase: phase, beat: beat, charX: charX,
                               ballX: ballX, ballLift: lift, kicking: kickedNow)
         let cell = min(bounds.width / Sprites.sceneW, bounds.height / Sprites.sceneH)

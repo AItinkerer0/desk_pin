@@ -9,13 +9,14 @@ enum WidgetKind: String, Codable { case clawd, codex }
 
 enum LifePhase {
     case idle          // 마당에서 정면 대기 (팔 들썩+깜빡)
-    case play          // 마당에서 공차기 (2026-06-13 추가 — Boss: "공차는거 너무 기여운디")
+    case play          // 마당에서 공차기 (기상 후 고정 순서 — Boss 2026-06-13: "이어서 넣자")
     case walkToDesk    // 오른쪽으로 출근
     case work          // 타자 (생각 멈춤 리듬 포함)
     case doze          // 책상에서 꾸벅 (눈 감고 z)
     case walkToBed     // 왼쪽으로 퇴근
     case sleep         // 침대에서 이불 덮고 취침 (zzz, 숨쉬기)
-    case walkBack      // 다시 마당으로
+    case walkBack      // 기상 — 침대에서 마당 공놀이 자리로
+    case returnHome    // 공놀이 끝 — 마당 가운데로 복귀
 }
 
 struct Cell {
@@ -68,6 +69,7 @@ enum Sprites {
     static let idleX: CGFloat = 7.8
     static let deskX: CGFloat = 11.3
     static let bedX: CGFloat = 1.2
+    static let playX: CGFloat = 4.5      // 기상 직후 공놀이 시작 지점 (3킥이 마당 안에 들어가는 위치)
     static let walkSpeed: CGFloat = 0.45  // 셀/박자
 
     // 캐릭터 로컬 셀 → 씬 좌표 (flip → 축소 → 평행이동·바닥 고정)
@@ -100,7 +102,7 @@ enum Sprites {
             c.append(Cell(ballX + 0.18, 7.48 - ballLift, 0.3, 0.3, NSColor(hex: 0x3A3F4A)))
         case .walkToDesk, .walkBack:
             c += side(kind, beat: beat, x: charX, flip: false, legs: .walking, arms: .rest, eyes: .open)
-        case .walkToBed:
+        case .walkToBed, .returnHome:
             c += side(kind, beat: beat, x: charX, flip: true, legs: .walking, arms: .rest, eyes: .open)
         case .work:
             let typing = (beat % 14) < 10
