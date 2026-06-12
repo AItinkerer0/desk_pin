@@ -64,6 +64,11 @@ final class ConfigStore {
             config.widgets.removeAll { $0.id == "juggle" }
             scheduleSave()
         }
+        // 모션 전환 기능 제거(2026-06-13)에 따른 청소 — 삭제된 모션을 가리키면 투명 렌더가 됨
+        for i in config.widgets.indices where config.widgets[i].motion != nil {
+            config.widgets[i].motion = nil
+            scheduleSave()
+        }
     }
 
     static func defaultConfig() -> AppConfig {

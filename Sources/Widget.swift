@@ -204,9 +204,10 @@ final class WidgetView: NSView {
 
         // 모션 루프 전용 위젯 — 추출 프레임만 꽉 채워 재생 (방·단계 없음, 원본과 1:1)
         if kind == .clawdLoop || kind == .detectiveLoop {
-            let motion = ConfigStore.shared.widget(widgetId)?.motion
-                ?? (kind == .detectiveLoop ? "detective" : "juggle")
-            let frames = JuggleSprites.motionFrames("clawd", motion)
+            let fallback = kind == .detectiveLoop ? "detective" : "juggle"
+            let motion = ConfigStore.shared.widget(widgetId)?.motion ?? fallback
+            var frames = JuggleSprites.motionFrames("clawd", motion)
+            if frames.isEmpty { frames = JuggleSprites.motionFrames("clawd", fallback) }   // 사라진 모션 → 기본값
             guard !frames.isEmpty else { return }
             ctx.imageInterpolation = .none
             let img = frames[beat % frames.count]
