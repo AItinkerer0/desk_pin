@@ -117,7 +117,7 @@ final class WidgetView: NSView {
     func tick() {
         guard window?.occlusionState.contains(.visible) == true else { return }   // 전력 가드
         beat += 1
-        if kind == .clawdLoop || kind == .detectiveLoop {   // 모션 루프 전용 — 단계 없음
+        if kind == .clawdLoop || kind == .codexLoop || kind == .detectiveLoop {   // 모션 루프 전용 — 단계 없음
             needsDisplay = true
             return
         }
@@ -203,11 +203,12 @@ final class WidgetView: NSView {
         // W3 alpha 백킹은 창 배경(applyWindowTraits)에서 처리 — 뷰 fill은 회색 박스로 비침(실측)
 
         // 모션 루프 전용 위젯 — 추출 프레임만 꽉 채워 재생 (방·단계 없음, 원본과 1:1)
-        if kind == .clawdLoop || kind == .detectiveLoop {
+        if kind == .clawdLoop || kind == .codexLoop || kind == .detectiveLoop {
             let fallback = kind == .detectiveLoop ? "detective" : "juggle"
             let motion = ConfigStore.shared.widget(widgetId)?.motion ?? fallback
-            var frames = JuggleSprites.motionFrames("clawd", motion)
-            if frames.isEmpty { frames = JuggleSprites.motionFrames("clawd", fallback) }   // 사라진 모션 → 기본값
+            let character = kind == .codexLoop ? "cody" : "clawd"
+            var frames = JuggleSprites.motionFrames(character, motion)
+            if frames.isEmpty { frames = JuggleSprites.motionFrames(character, fallback) }   // 사라진 모션 → 기본값
             guard !frames.isEmpty else { return }
             ctx.imageInterpolation = .none
             let img = frames[beat % frames.count]
@@ -240,11 +241,11 @@ final class WidgetView: NSView {
             NSRect(x: x0, y: y0, width: x1 - x0, height: y1 - y0).fill()
         }
         if !bitmapFrames.isEmpty {
-            // 영상 추출 프레임 — 12 video px = 아트 1px, 캐릭터 스케일에 맞춰 변환, 보간 없이(픽셀 보존)
+            // 도트복원 스프라이트(2026-06-13) — 1 png px = 1.825 video px, 12 video px = 아트 1px → 12/1.825
             ctx.imageInterpolation = .none
             let img = bitmapFrames[phaseBeat % bitmapFrames.count]
-            let cw = img.size.width / 12.0 * Sprites.charScale
-            let chh = img.size.height / 12.0 * Sprites.charScale
+            let cw = img.size.width / 6.58 * Sprites.charScale
+            let chh = img.size.height / 6.58 * Sprites.charScale
             img.draw(in: NSRect(x: ox + (charX - 0.6) * cell,
                                 y: oy + (8.18 + Sprites.offsetY) * cell - chh * cell,
                                 width: cw * cell, height: chh * cell),

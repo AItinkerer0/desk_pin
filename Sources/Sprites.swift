@@ -8,6 +8,7 @@ import AppKit
 enum WidgetKind: String, Codable {
     case clawd, codex
     case clawdLoop = "clawd_loop"             // 영상 추출 저글링 무한 루프 (생활 사이클 없음)
+    case codexLoop = "codex_loop"             // cody 리컬러 저글링 무한 루프 (2026-06-13)
     case detectiveLoop = "clawd_detective"    // 공식 돋보기 탐정 모션 무한 루프 (clawd-magnifier.gif, 113프레임)
 }
 

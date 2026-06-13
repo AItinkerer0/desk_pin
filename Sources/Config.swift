@@ -59,9 +59,22 @@ final class ConfigStore {
                 x: 1030, y: 180, size: 150, visible: true))
             scheduleSave()
         }
-        // 최종 구성(Boss 2026-06-13): 집 2채 + 탐정만 — 저글링 재건축 위젯은 제거
-        if config.widgets.contains(where: { $0.id == "juggle" }) {
-            config.widgets.removeAll { $0.id == "juggle" }
+        // 공놀이 루프 위젯 부활(Boss 2026-06-13 오후, 도트복원판 도입) — 직전 "집 2채+탐정만" 구성 결정을 대체
+        if !config.widgets.contains(where: { $0.id == "juggle" }) {
+            config.widgets.append(WidgetConfig(
+                id: "juggle", kind: .clawdLoop,
+                appPath: "/Applications/Claude.app",
+                bundleId: "com.anthropic.claudefordesktop",
+                x: 1680, y: 605, size: 110, visible: true))
+            scheduleSave()
+        }
+        // cody 공놀이 루프 위젯 (Boss 2026-06-13 오후)
+        if !config.widgets.contains(where: { $0.id == "cody_juggle" }) {
+            config.widgets.append(WidgetConfig(
+                id: "cody_juggle", kind: .codexLoop,
+                appPath: "/Applications/Codex.app",
+                bundleId: "com.openai.codex",
+                x: 1545, y: 605, size: 110, visible: true))
             scheduleSave()
         }
         // 모션 전환 기능 제거(2026-06-13)에 따른 청소 — 삭제된 모션을 가리키면 투명 렌더가 됨
