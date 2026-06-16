@@ -77,9 +77,18 @@ final class ConfigStore {
                 x: 1545, y: 605, size: 110, visible: true))
             scheduleSave()
         }
-        // 모션 전환 기능 제거(2026-06-13)에 따른 청소 — 삭제된 모션을 가리키면 투명 렌더가 됨
-        for i in config.widgets.indices where config.widgets[i].motion != nil {
-            config.widgets[i].motion = nil
+        // Clawd 모션 위젯 8종 (claude.ai 공식 모션 → PNG 시퀀스, 기본 숨김, 2026-06-17)
+        // kind=.clawdLoop + motion 필드로 구분 → draw가 clawd_{motion}_NN.png 로드.
+        let clawdMotions = ["dancing", "crabwalk", "jumping", "lurking",
+                            "racingcar", "waving", "sailing", "laptop"]
+        for (idx, motion) in clawdMotions.enumerated()
+            where !config.widgets.contains(where: { $0.id == motion }) {
+            config.widgets.append(WidgetConfig(
+                id: motion, kind: .clawdLoop,
+                appPath: "/Applications/Claude.app",
+                bundleId: "com.anthropic.claudefordesktop",
+                x: 1380 + Double(idx % 4) * 145, y: 380 + Double(idx / 4) * 145,
+                size: 130, visible: false, motion: motion))
             scheduleSave()
         }
     }

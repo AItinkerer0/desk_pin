@@ -3,3 +3,13 @@ assets/ref/
 assets/sprites/
 .DS_Store
 assets/external/
+
+# 윈도우 Electron 포팅 — 빌드 산출물·의존성·스프라이트/아이콘 복사본(저작권) 미커밋
+win/node_modules/
+win/sprites/
+win/tray.png
+win/*.ico
+win/dist/
+
+# Lottie 변환 venv (brew python 3.14) — Lottie→PNG sprite
+tools/lottie-venv/
